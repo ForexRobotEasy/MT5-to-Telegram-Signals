@@ -1,0 +1,102 @@
+
+// Developer's site: forexroboteasy.com
+// Developed by: Forex Robot Easy Team
+
+#property strict
+
+// Include necessary libraries
+#include <Telegram.mqh>
+
+// Define variables
+string botToken;
+int chatId;
+string symbolFilter;
+int magicNumberFilter;
+bool sendChartScreenshot = true;
+
+// Initialize Telegram API
+CTelegram telegram;
+
+// Function to send a message to Telegram
+void SendTelegramMessage(string message, bool sendScreenshot)
+{
+   // Send message to Telegram
+   telegram.SendMessage(chatId, message);
+
+   // Send chart screenshot if enabled
+   if(sendScreenshot)
+   {
+      // Take a screenshot of the chart
+      string screenshotPath = ChartScreenShot();
+
+      // Send the screenshot to Telegram
+      telegram.SendPhoto(chatId, screenshotPath);
+   }
+}
+
+// Function to handle order events
+void OnOrderEvent(const MqlTradeTransaction& transaction)
+{
+   // Filter orders based on symbol and magic number
+   if(transaction.symbol != symbolFilter || transaction.magic != magicNumberFilter)
+      return;
+
+   // Prepare message based on order event
+   string message;
+   if(transaction.type == ORDER_TYPE_BUY)
+      message = 'Buy order ';
+   else if(transaction.type == ORDER_TYPE_SELL)
+      message = 'Sell order ';
+   else if(transaction.type == ORDER_TYPE_MODIFY)
+      message = 'Order modification ';
+   else if(transaction.type == ORDER_TYPE_CLOSE)
+      message = 'Order closure ';
+
+   // Append order details to the message
+   message += 'for symbol ' + transaction.symbol + ' with magic number ' + IntegerToString(transaction.magic);
+
+   // Send message to Telegram
+   SendTelegramMessage(message, sendChartScreenshot);
+}
+
+// Initialize the Telegram bot
+void OnInit()
+{
+   // Set bot token and chat ID
+   botToken = 'YOUR_BOT_TOKEN';
+   chatId = YOUR_CHAT_ID;
+   
+   // Set symbol and magic number filters
+   symbolFilter = 'EURUSD';
+   magicNumberFilter = 12345;
+
+   // Connect to Telegram API
+   telegram.Connect(botToken);
+   
+   // Subscribe to order events
+   EventSetTimer(1);
+}
+
+// Deinitialize the Telegram bot
+void OnDeinit(const int reason)
+{
+   // Disconnect from Telegram API
+   telegram.Disconnect();
+}
+
+// Entry point of the program
+void OnStart()
+{
+   // Start trading algorithm
+   // ...
+   
+   // Place an example order
+   int ticket = OrderSend(Symbol(), OP_BUY, 0.1, Ask, 10, 0, 0, 'Buy order', magicNumberFilter, 0, clrNone);
+   
+   // Modify the example order
+   OrderModify(ticket, OrderOpenPrice(), OrderOpenPrice() - 10 * SymbolInfoDouble(Symbol(), SYMBOL_POINT), OrderStopLoss(), 0, clrNone);
+   
+   // Close the example order
+   OrderClose(ticket, OrderLots(), Bid, 0, clrNone);
+}
+
